@@ -1,0 +1,103 @@
+// Prisma Schema for StudyMate AI (PostgreSQL)
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String        @id @default(uuid())
+  email            String        @unique
+  name             String
+  avatar           String?
+  phone            String?
+  isVerifiedGmail  Boolean       @default(true)
+  isEmailVerified  Boolean       @default(true)
+  bio              String?       @default("Active Learner & Student")
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  materials        Material[]
+  chatMessages     ChatMessage[]
+  projects         Project[]
+  roomMessages     RoomMessage[]
+  createdRooms     Room[]        @relation("RoomCreator")
+}
+
+model OtpCode {
+  id             String   @id @default(uuid())
+  tempAuthToken  String   @unique
+  email          String
+  name           String
+  avatar         String?
+  otpCode        String
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+}
+
+model Material {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  sourceType  String   // "pdf" | "notes"
+  sourceText  String
+  summary     String
+  quiz        Json
+  flashcards  Json
+  notes       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  userId    String
+  role      String   // "user" | "assistant"
+  content   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  description String
+  linkUrl     String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Room {
+  id          String        @id @default(uuid())
+  code        String        @unique
+  title       String
+  topic       String
+  description String?
+  isPublic    Boolean       @default(false)
+  creatorId   String
+  createdAt   DateTime      @default(now())
+
+  creator     User          @relation("RoomCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  messages    RoomMessage[]
+}
+
+model RoomMessage {
+  id        String   @id @default(uuid())
+  roomId    String
+  userId    String
+  userName  String
+  content   String
+  createdAt DateTime @default(now())
+
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
